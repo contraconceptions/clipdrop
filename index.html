@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClipDrop</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <div id="app">
+      <header id="titlebar">
+        <div class="titlebar-brand">
+          <svg class="titlebar-logo" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
+            <rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/>
+            <rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/>
+            <rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.3"/>
+          </svg>
+          <span class="titlebar-title">CLIPDROP</span>
+        </div>
+        <nav id="nav">
+          <button class="nav-btn active" data-page="intake">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span>Intake</span>
+          </button>
+          <button class="nav-btn" data-page="dashboard">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/></svg>
+            <span>Dash</span>
+          </button>
+          <button class="nav-btn" data-page="browse">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 8l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            <span>Browse</span>
+          </button>
+        </nav>
+      </header>
+      <div id="page-container"></div>
+      <div id="toast" class="toast hidden"></div>
+    </div>
+  </body>
+</html>
