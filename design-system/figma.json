@@ -1,0 +1,16 @@
+{
+  "fileKey": "YhjGeZGiOU8S0xM1q3hV9x",
+  "fileUrl": "https://www.figma.com/design/YhjGeZGiOU8S0xM1q3hV9x",
+  "codeConnectStatus": "blocked-plan-requires-organization-or-enterprise",
+  "components": {
+    "Button": { "nodeId": "3:40", "source": "src/styles.css", "selector": ".btn" },
+    "Navigation Button": { "nodeId": "3:48", "source": "src/styles.css", "selector": ".nav-btn" },
+    "Search Field": { "nodeId": "3:55", "source": "src/styles.css", "selector": ".search-bar" },
+    "Status Badge": { "nodeId": "3:64", "source": "src/styles.css", "selector": ".item-status" },
+    "Tag": { "nodeId": "3:65", "source": "src/styles.css", "selector": ".tag" },
+    "Item Row": { "nodeId": "3:82", "source": "src/pages/browse.ts", "selector": ".item-row" },
+    "Stat Card": { "nodeId": "3:83", "source": "src/pages/dashboard.ts", "selector": ".stat-card" },
+    "Drop Zone": { "nodeId": "3:102", "source": "src/pages/intake.ts", "selector": ".drop-zone" },
+    "Toast": { "nodeId": "3:109", "source": "src/main.ts", "selector": ".toast" }
+  }
+}

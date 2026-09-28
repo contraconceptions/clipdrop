@@ -63,7 +63,6 @@ Local inference. No API key needed.
 ```json
 {
   "type": "openai",
-  "api_key": "sk-...",
   "model": "gpt-4"
 }
 ```
@@ -82,7 +81,6 @@ Local inference. No API key needed.
 ```json
 {
   "type": "anthropic",
-  "api_key": "sk-ant-...",
   "model": "claude-3-haiku-20240307"
 }
 ```
@@ -101,6 +99,8 @@ Edit `config.json` in the app data directory and restart the app. The `llm_provi
 
 ```json
 { "type": "ollama", "url": "...", "model": "..." }
-{ "type": "openai", "api_key": "...", "model": "..." }
-{ "type": "anthropic", "api_key": "...", "model": "..." }
+{ "type": "openai", "model": "..." }
+{ "type": "anthropic", "model": "..." }
 ```
+
+Set `CLIPDROP_OPENAI_API_KEY` or `CLIPDROP_ANTHROPIC_API_KEY` in the process environment. ClipDrop does not persist cloud credentials in its configuration file.

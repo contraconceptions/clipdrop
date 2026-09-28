@@ -37,18 +37,34 @@ async fn process_inner(db: &Database, config: &AppConfig, item_id: &str) -> Resu
         }
     };
 
-    let analysis = llm::analyze(&config.llm_provider, &text).await?;
-
-    db.update_item_analysis(item_id, &analysis.summary, &analysis.category, &analysis.tags)
-        .map_err(|e| e.to_string())?;
+    let mut analysis = llm::analyze(&config.llm_provider, &text).await?;
+    if !config
+        .categories
+        .iter()
+        .any(|category| category == &analysis.category)
+    {
+        analysis.category = "Other".into();
+    }
 
     // Move file from inbox to category folder
     if let Some(path_str) = &item.storage_path {
         let current = PathBuf::from(path_str);
         if current.exists() {
-            storage::move_to_category(&config.storage_path, &analysis.category, &current).ok();
+            let stored =
+                storage::move_to_category(&config.storage_path, &analysis.category, &current)
+                    .map_err(|e| format!("Failed to organize stored content: {}", e))?;
+            db.update_item_storage_path(item_id, &stored.to_string_lossy())
+                .map_err(|e| e.to_string())?;
         }
     }
+
+    db.update_item_analysis(
+        item_id,
+        &analysis.summary,
+        &analysis.category,
+        &analysis.tags,
+    )
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }

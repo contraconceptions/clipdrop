@@ -109,7 +109,6 @@ The backend uses a single `AppState` struct managed by Tauri:
 pub struct AppState {
     pub db: Arc<Database>,                    // Thread-safe DB handle
     pub config: Arc<std::sync::Mutex<AppConfig>>, // Mutable config
-    pub app_data_dir: PathBuf,                // User data directory
 }
 ```
 

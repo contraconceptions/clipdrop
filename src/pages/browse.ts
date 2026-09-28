@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { showToast } from "../main";
+import { escapeHtml, formatError } from "../utils";
 
 interface Item {
   id: string;
@@ -24,6 +25,11 @@ let selectedCategory: string | null = null;
 
 export async function renderBrowse(container: HTMLElement) {
   container.innerHTML = `
+    <section class="page-view">
+    <header class="page-heading">
+      <div><p class="eyebrow">RETRIEVE / LOCAL INDEX</p><h1>Find the capture by what you remember</h1><p>Search filename, extracted text, tags, and meaning across your private local index.</p></div>
+      <span class="shortcut">LOCAL SEARCH</span>
+    </header>
     <div class="browse-layout">
       <div class="category-sidebar" id="cat-sidebar">
         <div class="section-title">Filter</div>
@@ -34,6 +40,7 @@ export async function renderBrowse(container: HTMLElement) {
         <div id="detail-container"></div>
       </div>
     </div>
+    </section>
   `;
 
   const sidebar = document.getElementById("cat-sidebar")!;
@@ -96,7 +103,7 @@ async function loadItems(list: HTMLElement, detailContainer: HTMLElement) {
     }
     renderItemList(items, list, detailContainer);
   } catch (err) {
-    list.innerHTML = `<div class="empty-state">Error: ${err}</div>`;
+    list.innerHTML = `<div class="empty-state">Error: ${escapeHtml(formatError(err))}</div>`;
   }
 }
 
@@ -105,7 +112,7 @@ async function searchItems(query: string, list: HTMLElement, detailContainer: HT
     const items = await invoke<Item[]>("search_items", { query });
     renderItemList(items, list, detailContainer);
   } catch (err) {
-    list.innerHTML = `<div class="empty-state">Search error: ${err}</div>`;
+    list.innerHTML = `<div class="empty-state">Search error: ${escapeHtml(formatError(err))}</div>`;
   }
 }
 
@@ -119,16 +126,18 @@ function renderItemList(items: Item[], list: HTMLElement, detailContainer: HTMLE
   list.innerHTML = items
     .map((item) => {
       const icon = typeIcons[item.source_type] || "&#9634;";
-      const name = item.original_name || item.summary?.slice(0, 40) || item.id.slice(0, 8);
+      const name = escapeHtml(item.original_name || item.summary?.slice(0, 40) || item.id.slice(0, 8));
+      const category = escapeHtml(item.category || "—");
+      const status = escapeHtml(item.status);
       const date = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       return `
-      <div class="item-row" data-id="${item.id}">
+      <div class="item-row" data-id="${escapeHtml(item.id)}">
         <span class="item-type">${icon}</span>
         <div class="item-info">
           <div class="item-name">${name}</div>
-          <div class="item-meta">${item.category || "—"} · ${date}</div>
+          <div class="item-meta">${category} · ${date}</div>
         </div>
-        <span class="item-status ${item.status}">${item.status}</span>
+        <span class="item-status ${status}">${status}</span>
       </div>
     `;
     })
@@ -150,23 +159,23 @@ async function showDetail(id: string, detailContainer: HTMLElement) {
 
     detailContainer.innerHTML = `
       <div class="detail-panel">
-        <div class="detail-title">${item.original_name || item.id.slice(0, 12)}</div>
+        <div class="detail-title">${escapeHtml(item.original_name || item.id.slice(0, 12))}</div>
         ${
           item.summary
-            ? `<div class="detail-field"><div class="detail-label">Summary</div><div class="detail-value">${item.summary}</div></div>`
+            ? `<div class="detail-field"><div class="detail-label">Summary</div><div class="detail-value">${escapeHtml(item.summary)}</div></div>`
             : ""
         }
         <div class="detail-field">
           <div class="detail-label">Category</div>
-          <div class="detail-value">${item.category || "Uncategorized"}</div>
+          <div class="detail-value">${escapeHtml(item.category || "Uncategorized")}</div>
         </div>
         <div class="detail-field">
           <div class="detail-label">Type</div>
-          <div class="detail-value">${item.source_type} · ${item.status}</div>
+          <div class="detail-value">${escapeHtml(item.source_type)} · ${escapeHtml(item.status)}</div>
         </div>
         ${
           tags.length
-            ? `<div class="detail-field"><div class="detail-label">Tags</div><div class="detail-value">${tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div></div>`
+            ? `<div class="detail-field"><div class="detail-label">Tags</div><div class="detail-value">${tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div></div>`
             : ""
         }
         ${
@@ -202,12 +211,6 @@ async function showDetail(id: string, detailContainer: HTMLElement) {
       }
     });
   } catch (err) {
-    detailContainer.innerHTML = `<div class="empty-state">Error: ${err}</div>`;
+    detailContainer.innerHTML = `<div class="empty-state">Error: ${escapeHtml(formatError(err))}</div>`;
   }
-}
-
-function escapeHtml(text: string): string {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
 }

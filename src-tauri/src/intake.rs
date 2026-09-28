@@ -1,7 +1,7 @@
-use crate::db::{Database, Item};
 use crate::config::AppConfig;
-use crate::storage;
+use crate::db::{Database, Item};
 use crate::processor;
+use crate::storage;
 use chrono::Utc;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -11,7 +11,6 @@ use uuid::Uuid;
 pub struct AppState {
     pub db: Arc<Database>,
     pub config: Arc<std::sync::Mutex<AppConfig>>,
-    pub app_data_dir: PathBuf,
 }
 
 #[tauri::command]
@@ -20,9 +19,7 @@ pub async fn ingest_file(state: State<'_, AppState>, path: String) -> Result<Str
     let source = PathBuf::from(&path);
     let config = state.config.lock().unwrap().clone();
 
-    let original_name = source
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string());
+    let original_name = source.file_name().map(|n| n.to_string_lossy().to_string());
     let mime = mime_guess::from_path(&source)
         .first()
         .map(|m| m.to_string());

@@ -52,6 +52,31 @@ pub async fn approve_category(
     id: String,
     category: String,
 ) -> Result<(), String> {
+    let config = state
+        .config
+        .lock()
+        .map_err(|_| "Configuration lock is unavailable".to_string())?
+        .clone();
+    if !config.categories.iter().any(|allowed| allowed == &category) {
+        return Err("Category is not configured".into());
+    }
+
+    let item = state
+        .db
+        .get_item(&id)
+        .map_err(|e| e.to_string())?
+        .ok_or("Not found")?;
+    if let Some(path) = item.storage_path {
+        let current = std::path::PathBuf::from(path);
+        if current.exists() {
+            let moved = crate::storage::move_to_category(&config.storage_path, &category, &current)
+                .map_err(|e| format!("Failed to move stored content: {}", e))?;
+            state
+                .db
+                .update_item_storage_path(&id, &moved.to_string_lossy())
+                .map_err(|e| e.to_string())?;
+        }
+    }
     state
         .db
         .update_item_category(&id, &category)

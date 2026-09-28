@@ -14,7 +14,7 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let app_data_dir = app
                 .path()
@@ -30,7 +30,6 @@ pub fn run() {
             app.manage(AppState {
                 db: Arc::new(database),
                 config: Arc::new(std::sync::Mutex::new(cfg)),
-                app_data_dir,
             });
 
             // Show window on startup (for dev; production uses hotkey toggle)

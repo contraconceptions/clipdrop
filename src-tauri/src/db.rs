@@ -22,21 +22,6 @@ pub struct Item {
     pub updated_at: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Tag {
-    pub id: i64,
-    pub item_id: String,
-    pub tag: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ExtractedDetail {
-    pub id: i64,
-    pub item_id: String,
-    pub key: String,
-    pub value: String,
-}
-
 impl Database {
     pub fn new(db_path: &PathBuf) -> SqlResult<Self> {
         if let Some(parent) = db_path.parent() {
@@ -57,8 +42,7 @@ impl Database {
             "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);",
         )?;
 
-        let count: i64 =
-            conn.query_row("SELECT COUNT(*) FROM schema_version", [], |r| r.get(0))?;
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM schema_version", [], |r| r.get(0))?;
         if count == 0 {
             conn.execute("INSERT INTO schema_version (version) VALUES (0)", [])?;
         }
@@ -163,6 +147,16 @@ impl Database {
         Ok(())
     }
 
+    pub fn update_item_storage_path(&self, id: &str, storage_path: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().to_rfc3339();
+        conn.execute(
+            "UPDATE items SET storage_path = ?1, updated_at = ?2 WHERE id = ?3",
+            rusqlite::params![storage_path, now, id],
+        )?;
+        Ok(())
+    }
+
     pub fn update_item_analysis(
         &self,
         id: &str,
@@ -236,6 +230,14 @@ impl Database {
 
     pub fn search_items(&self, query: &str) -> SqlResult<Vec<Item>> {
         let conn = self.conn.lock().unwrap();
+        let terms = query
+            .split_whitespace()
+            .map(|term| format!("\"{}\"", term.replace('"', "\"\"")))
+            .collect::<Vec<_>>()
+            .join(" AND ");
+        if terms.is_empty() {
+            return Ok(Vec::new());
+        }
         let mut stmt = conn.prepare(
             "SELECT i.id, i.source_type, i.original_name, i.mime_type, i.raw_text, i.summary, i.category, i.status, i.storage_path, i.created_at, i.updated_at
              FROM items i
@@ -243,7 +245,7 @@ impl Database {
              WHERE items_fts MATCH ?1
              ORDER BY rank",
         )?;
-        let rows = stmt.query_map(rusqlite::params![query], |row| {
+        let rows = stmt.query_map(rusqlite::params![terms], |row| {
             Ok(Item {
                 id: row.get(0)?,
                 source_type: row.get(1)?,
@@ -293,8 +295,9 @@ impl Database {
 
     pub fn get_all_categories(&self) -> SqlResult<Vec<String>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt =
-            conn.prepare("SELECT DISTINCT category FROM items WHERE category IS NOT NULL ORDER BY category")?;
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT category FROM items WHERE category IS NOT NULL ORDER BY category",
+        )?;
         let rows = stmt.query_map([], |row| row.get(0))?;
         rows.collect()
     }

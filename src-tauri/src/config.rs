@@ -14,9 +14,9 @@ pub enum LlmProviderConfig {
     #[serde(rename = "ollama")]
     Ollama { url: String, model: String },
     #[serde(rename = "openai")]
-    OpenAI { api_key: String, model: String },
+    OpenAI { model: String },
     #[serde(rename = "anthropic")]
-    Anthropic { api_key: String, model: String },
+    Anthropic { model: String },
 }
 
 impl Default for AppConfig {

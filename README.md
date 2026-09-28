@@ -1,8 +1,16 @@
 # ClipDrop
 
+**Created by Matt Sutton**
+
 Smart clipboard & file intake manager with LLM-powered categorization. Built with Tauri v2 + TypeScript.
 
 Drop files, paste text, or capture clipboard images -- ClipDrop automatically analyzes, categorizes, and organizes your content using AI.
+
+> **Project status:** Early-stage portfolio project. The core intake, classification, storage, search, and browsing flows are implemented; settings UI, secure credential storage, and broader automated test coverage are planned.
+
+## Why I Built It
+
+ClipDrop explores a common personal-workflow problem: useful snippets and files are easy to capture but hard to organize later. The project combines a lightweight native shell, local persistence, full-text search, and swappable AI providers while keeping the frontend deliberately framework-free.
 
 ## Features
 
@@ -38,6 +46,15 @@ npm run tauri build
 
 The installer will be in `src-tauri/target/release/bundle/`.
 
+### Quality Checks
+
+```bash
+npm run check
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+These checks also run in GitHub Actions on pushes and pull requests.
+
 ### Hotkey Setup (Windows)
 
 Run `clipdrop.ahk` with [AutoHotkey v2](https://www.autohotkey.com/) to enable Ctrl+Shift+V window toggle.
@@ -66,10 +83,11 @@ To use OpenAI or Anthropic instead, change `llm_provider`:
 ```json
 {
   "type": "openai",
-  "api_key": "sk-...",
   "model": "gpt-4"
 }
 ```
+
+Set `CLIPDROP_OPENAI_API_KEY` or `CLIPDROP_ANTHROPIC_API_KEY` in the environment before launching ClipDrop. Cloud credentials are intentionally not stored in `config.json`.
 
 ## Documentation
 
@@ -94,6 +112,22 @@ See the [`docs/`](docs/) directory for full developer documentation:
 | AI | Ollama / OpenAI / Anthropic |
 | Styling | Custom CSS (no framework) |
 
+## Architecture
+
+The TypeScript frontend invokes a small set of Tauri commands. Rust owns file intake, SQLite access, AI-provider calls, and background classification. New content is first copied into an inbox, recorded in SQLite, analyzed asynchronously, and then moved into a validated category folder. See [the architecture guide](docs/architecture.md) for the detailed flow.
+
+For a concise project narrative suitable for a personal site, see the [portfolio case study](PORTFOLIO.md).
+
+The production tokens and component inventory are mirrored in the editable [ClipDrop Figma design system](https://www.figma.com/design/YhjGeZGiOU8S0xM1q3hV9x). Node-to-source mappings are tracked in [`design-system/figma.json`](design-system/figma.json); publishing them through Figma Code Connect requires an Organization or Enterprise workspace.
+
+## Known Limitations
+
+- Cloud keys are read from environment variables rather than stored by the app. A future settings UI should integrate with the operating system credential store.
+- Google Fonts currently require a network connection. Bundling fonts locally is recommended before release.
+- Image classification currently uses file metadata rather than vision-model input.
+- The Windows hotkey helper is a separate AutoHotkey v2 script rather than an in-app global shortcut.
+- This snapshot has only a small Rust unit-test foundation; database and command integration tests remain to be added.
+
 ## License
 
-See repository for license details.
+Released under the [MIT License](LICENSE).

@@ -40,6 +40,9 @@ pub fn move_to_category(
         .to_string_lossy()
         .to_string();
     let dest = cat_dir.join(&filename);
+    if dest == current_path {
+        return Ok(dest);
+    }
     std::fs::rename(current_path, &dest).or_else(|_| {
         std::fs::copy(current_path, &dest)?;
         std::fs::remove_file(current_path)

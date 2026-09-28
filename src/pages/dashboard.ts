@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { showToast } from "../main";
+import { escapeHtml, formatError } from "../utils";
 
 interface Item {
   id: string;
@@ -35,8 +36,15 @@ export async function renderDashboard(container: HTMLElement) {
     ]);
 
     const failedItems = items.filter((i) => i.status === "failed");
+    const railTotal = document.getElementById("rail-total");
+    if (railTotal) railTotal.textContent = String(stats.total).padStart(2, "0");
 
     container.innerHTML = `
+      <section class="page-view">
+      <header class="page-heading">
+        <div><p class="eyebrow">CLASSIFY / ACTIVE</p><h1>Make every capture searchable</h1><p>Track local processing, review failures, and confirm your indexed library.</p></div>
+        <span class="shortcut">${stats.pending} QUEUED · ${stats.failed} FAILED</span>
+      </header>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-value">${stats.total}</div><div class="stat-label">Total</div></div>
         <div class="stat-card"><div class="stat-value">${stats.pending}</div><div class="stat-label">Queue</div></div>
@@ -59,6 +67,7 @@ export async function renderDashboard(container: HTMLElement) {
       <div class="item-list" id="recent-list">
         ${items.length ? items.map((i) => itemRow(i)).join("") : '<div class="empty-state">No items yet — drop something on the intake.</div>'}
       </div>
+      </section>
     `;
 
     container.querySelectorAll(".retry-btn").forEach((btn) => {
@@ -75,23 +84,25 @@ export async function renderDashboard(container: HTMLElement) {
       });
     });
   } catch (err) {
-    container.innerHTML = `<div class="empty-state">Error: ${err}</div>`;
+    container.innerHTML = `<div class="empty-state">Error: ${escapeHtml(formatError(err))}</div>`;
   }
 }
 
 function itemRow(item: Item, showRetry = false): string {
   const icon = typeIcons[item.source_type] || "&#9634;";
-  const name = item.original_name || item.summary?.slice(0, 40) || item.id.slice(0, 8);
+  const name = escapeHtml(item.original_name || item.summary?.slice(0, 40) || item.id.slice(0, 8));
+  const category = escapeHtml(item.category || "—");
+  const status = escapeHtml(item.status);
   const date = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   return `
     <div class="item-row">
       <span class="item-type">${icon}</span>
       <div class="item-info">
         <div class="item-name">${name}</div>
-        <div class="item-meta">${item.category || "—"} · ${date}</div>
+        <div class="item-meta">${category} · ${date}</div>
       </div>
-      <span class="item-status ${item.status}">${item.status}</span>
-      ${showRetry ? `<button class="btn btn-sm retry-btn" data-id="${item.id}">retry</button>` : ""}
+      <span class="item-status ${status}">${status}</span>
+      ${showRetry ? `<button class="btn btn-sm retry-btn" data-id="${escapeHtml(item.id)}">retry</button>` : ""}
     </div>
   `;
 }

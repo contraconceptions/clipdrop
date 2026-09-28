@@ -13,21 +13,33 @@ const SYSTEM_PROMPT: &str = r#"You are a content classifier. Given text content,
 No markdown, no explanation, just JSON."#;
 
 pub async fn analyze(config: &LlmProviderConfig, text: &str) -> Result<AnalysisResult, String> {
-    let truncated = if text.len() > 4000 {
-        &text[..4000]
-    } else {
-        text
-    };
+    let truncated = truncate_utf8(text, 4000);
 
     match config {
         LlmProviderConfig::Ollama { url, model } => analyze_ollama(url, model, truncated).await,
-        LlmProviderConfig::OpenAI { api_key, model } => {
-            analyze_openai(api_key, model, truncated).await
+        LlmProviderConfig::OpenAI { model } => {
+            let api_key = std::env::var("CLIPDROP_OPENAI_API_KEY")
+                .map_err(|_| "CLIPDROP_OPENAI_API_KEY is not set".to_string())?;
+            analyze_openai(&api_key, model, truncated).await
         }
-        LlmProviderConfig::Anthropic { api_key, model } => {
-            analyze_anthropic(api_key, model, truncated).await
+        LlmProviderConfig::Anthropic { model } => {
+            let api_key = std::env::var("CLIPDROP_ANTHROPIC_API_KEY")
+                .map_err(|_| "CLIPDROP_ANTHROPIC_API_KEY is not set".to_string())?;
+            analyze_anthropic(&api_key, model, truncated).await
         }
     }
+}
+
+fn truncate_utf8(text: &str, max_bytes: usize) -> &str {
+    if text.len() <= max_bytes {
+        return text;
+    }
+
+    let mut end = max_bytes;
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    &text[..end]
 }
 
 async fn analyze_ollama(url: &str, model: &str, text: &str) -> Result<AnalysisResult, String> {
@@ -41,12 +53,12 @@ async fn analyze_ollama(url: &str, model: &str, text: &str) -> Result<AnalysisRe
         }))
         .send()
         .await
-        .map_err(|e| format!("Ollama request failed: {}", e))?;
+        .map_err(|e| format!("Ollama request failed: {}", e))?
+        .error_for_status()
+        .map_err(|e| format!("Ollama returned an error: {}", e))?;
 
     let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
-    let response_text = body["response"]
-        .as_str()
-        .ok_or("No response field")?;
+    let response_text = body["response"].as_str().ok_or("No response field")?;
     parse_analysis(response_text)
 }
 
@@ -65,7 +77,9 @@ async fn analyze_openai(api_key: &str, model: &str, text: &str) -> Result<Analys
         }))
         .send()
         .await
-        .map_err(|e| format!("OpenAI request failed: {}", e))?;
+        .map_err(|e| format!("OpenAI request failed: {}", e))?
+        .error_for_status()
+        .map_err(|e| format!("OpenAI returned an error: {}", e))?;
 
     let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
     let response_text = body["choices"][0]["message"]["content"]
@@ -93,7 +107,9 @@ async fn analyze_anthropic(
         }))
         .send()
         .await
-        .map_err(|e| format!("Anthropic request failed: {}", e))?;
+        .map_err(|e| format!("Anthropic request failed: {}", e))?
+        .error_for_status()
+        .map_err(|e| format!("Anthropic returned an error: {}", e))?;
 
     let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
     let response_text = body["content"][0]["text"]
@@ -119,7 +135,20 @@ fn parse_analysis(text: &str) -> Result<AnalysisResult, String> {
         format!(
             "Failed to parse LLM response as JSON: {}. Raw: {}",
             e,
-            &text[..text.len().min(200)]
+            truncate_utf8(text, 200)
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::truncate_utf8;
+
+    #[test]
+    fn truncates_without_splitting_unicode() {
+        let text = format!("{}é", "a".repeat(3999));
+        let truncated = truncate_utf8(&text, 4000);
+        assert_eq!(truncated.len(), 3999);
+        assert!(truncated.ends_with('a'));
+    }
 }

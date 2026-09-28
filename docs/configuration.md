@@ -55,7 +55,6 @@ Which LLM service to use for content analysis. One of three variants:
 ```json
 {
   "type": "openai",
-  "api_key": "sk-...",
   "model": "gpt-4"
 }
 ```
@@ -64,10 +63,11 @@ Which LLM service to use for content analysis. One of three variants:
 ```json
 {
   "type": "anthropic",
-  "api_key": "sk-ant-...",
   "model": "claude-3-haiku-20240307"
 }
 ```
+
+Cloud provider secrets are not stored in this file. Set `CLIPDROP_OPENAI_API_KEY` or `CLIPDROP_ANTHROPIC_API_KEY` in the environment before starting the app.
 
 ### `categories`
 
@@ -84,7 +84,7 @@ You can add or rename categories. The LLM system prompt will include your custom
 | Key | Value | Description |
 |-----|-------|-------------|
 | `productName` | `"ClipDrop"` | App name |
-| `identifier` | `"com.clipdrop.app"` | Unique app ID |
+| `identifier` | `"com.mattsutton.clipdrop"` | Unique app ID |
 | `version` | `"0.1.0"` | App version |
 | `windows[0].width` | `400` | Window width |
 | `windows[0].height` | `300` | Window height |
@@ -110,7 +110,6 @@ Key crates from `Cargo.toml`:
 | Crate | Purpose |
 |-------|---------|
 | `tauri` (v2) | Desktop framework |
-| `tauri-plugin-opener` | Open files/URLs externally |
 | `rusqlite` (bundled) | Embedded SQLite |
 | `uuid` | Item ID generation |
 | `chrono` | Timestamps |

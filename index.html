@@ -14,31 +14,47 @@
     <div id="app">
       <header id="titlebar">
         <div class="titlebar-brand">
-          <svg class="titlebar-logo" width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
-            <rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/>
-            <rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/>
-            <rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.3"/>
-          </svg>
-          <span class="titlebar-title">CLIPDROP</span>
+          <span class="titlebar-mark" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 4V2.5A1.5 1.5 0 0 1 4.5 1h2M12 4V2.5A1.5 1.5 0 0 0 10.5 1h-2M3 11v1.5A1.5 1.5 0 0 0 4.5 14h2M12 11v1.5a1.5 1.5 0 0 1-1.5 1h-2M5 7.5h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+          <span class="titlebar-copy"><strong>ClipDrop</strong><small>LOCAL INDEX</small></span>
         </div>
-        <nav id="nav">
+        <nav id="nav" aria-label="Primary navigation">
           <button class="nav-btn active" data-page="intake">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <span>Intake</span>
+            <b>01</b><span>Capture</span><kbd>⌘1</kbd>
           </button>
           <button class="nav-btn" data-page="dashboard">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/></svg>
-            <span>Dash</span>
+            <b>02</b><span>Classify</span><kbd>⌘2</kbd>
           </button>
           <button class="nav-btn" data-page="browse">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 8l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-            <span>Browse</span>
+            <b>03</b><span>Retrieve</span><kbd>⌘3</kbd>
           </button>
         </nav>
+        <div class="window-actions"><div class="device-state"><i></i><span>ON-DEVICE</span></div><button id="compact-toggle" class="icon-btn" type="button" title="Switch to capture widget" aria-label="Switch to capture widget">⌄</button></div>
       </header>
-      <div id="page-container"></div>
-      <div id="toast" class="toast hidden"></div>
+      <div class="app-shell">
+        <aside class="utility-rail" aria-label="Library summary">
+          <div class="rail-count"><strong id="rail-total">—</strong><span>INDEXED ITEMS</span></div>
+          <button class="rail-item active" data-page="intake"><span>⌑</span>Inbox</button>
+          <button class="rail-item" data-page="dashboard"><span>◔</span>Processing</button>
+          <button class="rail-item" data-page="browse"><span>▤</span>Library</button>
+          <div class="rail-rule"></div>
+          <p class="rail-label">SAVED VIEWS</p>
+          <span class="rail-static">□ Documents</span><span class="rail-static">▧ Images</span><span class="rail-static">⌘ Code</span><span class="rail-static">↗ Links</span>
+          <div class="local-card"><strong>▣ LOCAL ONLY</strong><span>Index stored on this device.</span></div>
+        </aside>
+        <main id="page-container"></main>
+      </div>
+      <section id="capture-widget" aria-label="ClipDrop quick capture widget">
+        <button class="widget-surface" id="widget-capture" type="button" aria-label="Choose files or drop content here">
+          <span class="widget-mark">+</span>
+          <span><strong>Drop or paste</strong><small>Click to choose files</small></span>
+        </button>
+        <div class="widget-actions">
+          <button id="widget-paste" type="button" title="Paste clipboard" aria-label="Paste clipboard">▧</button>
+          <button id="widget-library" type="button" title="Open library" aria-label="Open library">▤</button>
+          <button id="widget-expand" type="button" title="Expand ClipDrop" aria-label="Expand ClipDrop">↗</button>
+        </div>
+      </section>
+      <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     </div>
   </body>
 </html>
