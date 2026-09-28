@@ -6,7 +6,7 @@ Smart clipboard & file intake manager with LLM-powered categorization. Built wit
 
 Drop files, paste text, or capture clipboard images -- ClipDrop automatically analyzes, categorizes, and organizes your content using AI.
 
-> **Project status:** Early-stage portfolio project. The core intake, classification, storage, search, and browsing flows are implemented; settings UI, secure credential storage, and broader automated test coverage are planned.
+> **Project status:** Early-stage portfolio project. Native intake, classification, storage, search, full-content browsing, provider settings, and compact/expanded desktop modes are implemented. Secure OS credential-vault storage and broader automated test coverage remain planned.
 
 ## Why I Built It
 
@@ -14,11 +14,14 @@ ClipDrop explores a common personal-workflow problem: useful snippets and files 
 
 ## Features
 
-- **Drag & drop** files, text, and images into a minimal overlay window
+- **Two desktop modes** -- a full workspace and a 360×116 always-on-top capture widget
+- **Native capture** -- drag files, click to open the system file picker, or paste text and images
 - **Clipboard capture** via Ctrl+V (text and images)
 - **LLM-powered analysis** -- automatic summarization, categorization, and tagging
-- **Multi-provider AI** -- supports Ollama (local), OpenAI, and Anthropic
+- **Multi-provider AI** -- supports Ollama (local), OpenAI, Anthropic, and custom OpenAI-compatible endpoints
+- **Provider settings** -- discover Ollama models, test connections, and configure OpenAI-compatible APIs
 - **Full-text search** via SQLite FTS5
+- **Full-content reader** -- inspect and copy the complete extracted text for indexed text content
 - **Category-based organization** with automatic file sorting
 - **Global hotkey** (Ctrl+Shift+V) to toggle the window via AutoHotkey
 
@@ -37,6 +40,8 @@ ClipDrop explores a common personal-workflow problem: useful snippets and files 
 npm install
 npm run tauri dev
 ```
+
+`npm run tauri dev` launches the complete standalone desktop application. `npm run dev` is an optional browser-only UI preview; native filesystem ingestion is intentionally unavailable there.
 
 ### Build for Production
 
@@ -63,8 +68,8 @@ Run `clipdrop.ahk` with [AutoHotkey v2](https://www.autohotkey.com/) to enable C
 
 On first launch, a `config.json` is created in the app data directory:
 
-- **Windows:** `%LOCALAPPDATA%/com.clipdrop.app/config.json`
-- **Linux:** `~/.local/share/com.clipdrop.app/config.json`
+- **Windows:** `%APPDATA%/com.mattsutton.clipdrop/config.json`
+- **Linux:** the Tauri application data directory for `com.mattsutton.clipdrop`
 
 ```json
 {
@@ -78,16 +83,19 @@ On first launch, a `config.json` is created in the app data directory:
 }
 ```
 
-To use OpenAI or Anthropic instead, change `llm_provider`:
+Provider settings are available in **04 Settings** (`Ctrl/Cmd+4`). Select an installed Ollama model, configure OpenAI or Anthropic, or provide an OpenAI-compatible endpoint.
+
+To configure OpenAI manually:
 
 ```json
 {
   "type": "openai",
-  "model": "gpt-4"
+  "model": "gpt-4o-mini",
+  "api_key": "..."
 }
 ```
 
-Set `CLIPDROP_OPENAI_API_KEY` or `CLIPDROP_ANTHROPIC_API_KEY` in the environment before launching ClipDrop. Cloud credentials are intentionally not stored in `config.json`.
+Keys entered in Settings are stored in ClipDrop's local configuration file. `CLIPDROP_OPENAI_API_KEY` and `CLIPDROP_ANTHROPIC_API_KEY` remain supported as fallbacks when a saved key is empty.
 
 ## Documentation
 
@@ -109,7 +117,7 @@ See the [`docs/`](docs/) directory for full developer documentation:
 | Frontend | Vanilla TypeScript, Vite |
 | Backend | Rust (async, Tokio) |
 | Database | SQLite + FTS5 |
-| AI | Ollama / OpenAI / Anthropic |
+| AI | Ollama / OpenAI / Anthropic / OpenAI-compatible APIs |
 | Styling | Custom CSS (no framework) |
 
 ## Architecture
@@ -122,9 +130,10 @@ The production tokens and component inventory are mirrored in the editable [Clip
 
 ## Known Limitations
 
-- Cloud keys are read from environment variables rather than stored by the app. A future settings UI should integrate with the operating system credential store.
+- Provider keys are stored in the local application configuration rather than the operating system credential vault.
 - Google Fonts currently require a network connection. Bundling fonts locally is recommended before release.
 - Image classification currently uses file metadata rather than vision-model input.
+- PDF and DOCX body extraction is not yet implemented; the full-content reader displays content already extracted as text.
 - The Windows hotkey helper is a separate AutoHotkey v2 script rather than an in-app global shortcut.
 - This snapshot has only a small Rust unit-test foundation; database and command integration tests remain to be added.
 

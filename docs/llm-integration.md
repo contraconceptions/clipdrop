@@ -1,106 +1,65 @@
 # LLM Integration
 
-ClipDrop supports three LLM providers for content analysis: Ollama (local), OpenAI, and Anthropic.
+ClipDrop classifies ingested content with Ollama, OpenAI, Anthropic, or a custom OpenAI-compatible service. Configure and test the active provider from **Settings**.
 
-## How It Works
+## Processing flow
 
-1. When an item is ingested, a background task calls `llm::analyze()`
-2. Content is truncated to **4000 characters**
-3. A system prompt asks the LLM to return JSON with `summary`, `category`, and `tags`
-4. The response is parsed and stored in the database
+1. Ingestion creates a database record with `processing` status and starts a background task.
+2. Text sent for analysis is limited to 4,000 bytes.
+3. The provider is asked for JSON containing `summary`, `category`, and `tags`.
+4. A successful result is stored and the item becomes `done`.
+5. A provider, timeout, or parse error is stored on the item and its status becomes `failed`.
 
-## System Prompt
+Provider analysis has a 180-second timeout. Interrupted `processing` records are recovered as failed when the app next starts, so jobs do not remain permanently stuck. Retry starts a fresh processing task.
 
+## Expected response
+
+```json
+{
+  "summary": "A short description of the content.",
+  "category": "Documents",
+  "tags": ["reference", "example"]
+}
 ```
-You are a content classifier. Given text content, respond with ONLY valid JSON:
-{"summary": "1-2 sentence summary", "category": "one of: Documents, Images, Code, Notes, Links, Other", "tags": ["tag1", "tag2"]}
-No markdown, no explanation, just JSON.
-```
 
-The category list comes from `AppConfig.categories`.
-
-## Response Parsing
-
-`parse_analysis()` handles:
-- Clean JSON responses
-- JSON wrapped in markdown code fences (` ```json ... ``` `)
-- Returns `AnalysisResult { summary, category, tags }`
+The parser accepts plain JSON and JSON wrapped in a Markdown code fence. Categories in the prompt come from `AppConfig.categories`.
 
 ## Providers
 
-### Ollama (Default)
+### Ollama
 
-Local inference. No API key needed.
+- Default URL: `http://localhost:11434`
+- Discovery/test endpoint: `GET /api/tags`
+- Analysis endpoint: `POST /api/generate`
+- The request sets `format: "json"`, disables streaming, and uses a low temperature.
 
-| Setting | Default |
-|---------|---------|
-| URL | `http://localhost:11434` |
-| Model | `glm-4.7:cloud` |
-| Endpoint | `POST {url}/api/generate` |
-
-**Request:**
-```json
-{
-  "model": "glm-4.7:cloud",
-  "prompt": "<system prompt>\n\nContent:\n<text>",
-  "stream": false
-}
-```
-
-**Response field:** `.response`
-
-**Setup:** Install [Ollama](https://ollama.ai/), then `ollama pull glm-4.7:cloud` (or any model you prefer).
+Install Ollama, pull at least one model, then use **Load models** in Settings and select it. The connection test verifies that Ollama responds and that the selected model is installed.
 
 ### OpenAI
 
-| Setting | Required |
-|---------|----------|
-| API key | Yes (`sk-...`) |
-| Model | e.g. `gpt-4`, `gpt-4o-mini` |
-| Endpoint | `https://api.openai.com/v1/chat/completions` |
+- Test endpoint: `GET https://api.openai.com/v1/models`
+- Analysis endpoint: `POST https://api.openai.com/v1/chat/completions`
+- Default model in the UI: `gpt-4o-mini`
 
-**Config:**
-```json
-{
-  "type": "openai",
-  "model": "gpt-4"
-}
-```
-
-**Parameters:** `temperature: 0.3`
+The saved key is used first. If it is blank, background analysis checks `CLIPDROP_OPENAI_API_KEY`.
 
 ### Anthropic
 
-| Setting | Required |
-|---------|----------|
-| API key | Yes |
-| Model | e.g. `claude-3-haiku-20240307` |
-| Endpoint | `https://api.anthropic.com/v1/messages` |
+- Test endpoint: `GET https://api.anthropic.com/v1/models`
+- Analysis endpoint: `POST https://api.anthropic.com/v1/messages`
+- Default model in the UI: `claude-3-5-haiku-latest`
+- API version header: `2023-06-01`
 
-**Config:**
-```json
-{
-  "type": "anthropic",
-  "model": "claude-3-haiku-20240307"
-}
-```
+The saved key is used first. If it is blank, background analysis checks `CLIPDROP_ANTHROPIC_API_KEY`.
 
-**Parameters:** `max_tokens: 300`, `anthropic-version: 2023-06-01`
+### Custom OpenAI-compatible provider
 
-## Error Handling
+Supply the API base URL, model, and key. ClipDrop calls `{baseUrl}/models` for connection testing and `{baseUrl}/chat/completions` for analysis with bearer authentication.
 
-- Network errors: Item status set to `"failed"`, error logged to stderr
-- Parse errors: Error message includes a snippet of the raw response
-- Users can retry failed items from the dashboard or browse page
+## Troubleshooting
 
-## Switching Providers
-
-Edit `config.json` in the app data directory and restart the app. The `llm_provider` field accepts:
-
-```json
-{ "type": "ollama", "url": "...", "model": "..." }
-{ "type": "openai", "model": "..." }
-{ "type": "anthropic", "model": "..." }
-```
-
-Set `CLIPDROP_OPENAI_API_KEY` or `CLIPDROP_ANTHROPIC_API_KEY` in the process environment. ClipDrop does not persist cloud credentials in its configuration file.
+- **Ollama provider rejected / connection failed:** confirm Ollama is running, the URL is reachable from the desktop process, and the chosen model appears in `ollama list`.
+- **Model not installed:** select **Load models**, choose an installed entry, and save.
+- **Cloud provider rejected:** recheck the key, model access, and provider billing/account state.
+- **Item failed:** open the failed item to read the stored error, correct the provider configuration, then select **Retry**.
+- **Item was processing when the app closed:** it will appear as failed after restart and can be retried safely.

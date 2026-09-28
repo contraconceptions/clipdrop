@@ -1,123 +1,79 @@
 # Configuration Reference
 
-## Config File
+## Settings screen
 
-Location: `{app_data_dir}/config.json`
+Open **Settings** in the desktop navigation to select a provider, edit its connection details, load installed Ollama models, test the connection, and save the configuration. Changes are used by newly queued processing jobs without requiring a restart.
 
-- **Windows:** `%LOCALAPPDATA%/com.clipdrop.app/config.json`
-- **Linux:** `~/.local/share/com.clipdrop.app/config.json`
+Provider API keys are stored in ClipDrop's local configuration file. Treat that file as sensitive and do not commit or share it.
 
-Created automatically on first launch with defaults.
+## Config file
 
-## Full Schema
+The file is created automatically at `{app_data_dir}/config.json` on first launch.
+
+- **Windows:** `%APPDATA%/com.mattsutton.clipdrop/config.json`
+- **Linux:** the Tauri application data directory for `com.mattsutton.clipdrop`
+
+The SQLite database lives beside it. On Windows, the default managed-storage directory is `%LOCALAPPDATA%/ClipDrop`.
+
+## Schema
 
 ```json
 {
-  "storage_path": "/path/to/storage",
+  "storage_path": "C:/path/to/storage",
   "llm_provider": {
     "type": "ollama",
     "url": "http://localhost:11434",
     "model": "glm-4.7:cloud"
   },
-  "categories": [
-    "Documents",
-    "Images",
-    "Code",
-    "Notes",
-    "Links",
-    "Other"
-  ]
+  "categories": ["Documents", "Images", "Code", "Notes", "Links", "Other"]
 }
 ```
-
-## Fields
 
 ### `storage_path`
 
-Root directory for file storage. Contains `inbox/` and category subdirectories.
-
-**Default:** App data directory.
+Root directory for managed files. It contains `inbox/` and category subdirectories. The app data directory is used by default.
 
 ### `llm_provider`
 
-Which LLM service to use for content analysis. One of three variants:
+ClipDrop supports four provider shapes:
 
-**Ollama (local, default):**
 ```json
-{
-  "type": "ollama",
-  "url": "http://localhost:11434",
-  "model": "glm-4.7:cloud"
-}
+{ "type": "ollama", "url": "http://localhost:11434", "model": "glm-4.7:cloud" }
+{ "type": "openai", "model": "gpt-4o-mini", "api_key": "sk-..." }
+{ "type": "anthropic", "model": "claude-3-5-haiku-latest", "api_key": "..." }
+{ "type": "custom", "url": "https://api.example.com/v1", "model": "model-name", "api_key": "..." }
 ```
 
-**OpenAI:**
-```json
-{
-  "type": "openai",
-  "model": "gpt-4"
-}
-```
-
-**Anthropic:**
-```json
-{
-  "type": "anthropic",
-  "model": "claude-3-haiku-20240307"
-}
-```
-
-Cloud provider secrets are not stored in this file. Set `CLIPDROP_OPENAI_API_KEY` or `CLIPDROP_ANTHROPIC_API_KEY` in the environment before starting the app.
+The custom provider must expose OpenAI-compatible `GET /models` and `POST /chat/completions` endpoints. If the saved OpenAI or Anthropic key is empty, processing falls back to `CLIPDROP_OPENAI_API_KEY` or `CLIPDROP_ANTHROPIC_API_KEY` respectively.
 
 ### `categories`
 
-List of category names. Used by the LLM prompt and for creating storage directories.
+Category names used in the analysis prompt and managed-storage directories. The default is `Documents`, `Images`, `Code`, `Notes`, `Links`, and `Other`.
 
-**Default:** `["Documents", "Images", "Code", "Notes", "Links", "Other"]`
+## Desktop window
 
-You can add or rename categories. The LLM system prompt will include your custom list.
+`src-tauri/tauri.conf.json` defines the standalone application shell:
 
-## Tauri Configuration
+| Setting | Value |
+|---|---:|
+| Expanded size | 1040 × 680 |
+| Expanded minimum | 760 × 520 |
+| Compact widget size | 360 × 116 |
+| Native decorations | Disabled |
+| Always on top | Enabled |
+| Initially visible | No; the Rust setup shows it when ready |
 
-`src-tauri/tauri.conf.json` controls the app build and window:
+The compact/expanded dimensions are switched at runtime. `devUrl` points to Vite only during development; packaged builds load the compiled `frontendDist` assets and do not require localhost.
 
-| Key | Value | Description |
-|-----|-------|-------------|
-| `productName` | `"ClipDrop"` | App name |
-| `identifier` | `"com.mattsutton.clipdrop"` | Unique app ID |
-| `version` | `"0.1.0"` | App version |
-| `windows[0].width` | `400` | Window width |
-| `windows[0].height` | `300` | Window height |
-| `windows[0].decorations` | `false` | No native title bar |
-| `windows[0].alwaysOnTop` | `true` | Stays above other windows |
-| `windows[0].visible` | `false` | Starts hidden |
-| `devUrl` | `http://localhost:1420` | Vite dev server |
-| `frontendDist` | `../dist` | Production build output |
+## Build scripts
 
-## Build Scripts
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Browser-only Vite development preview |
+| `npm run build` | Type-check and build the web assets |
+| `npm run tauri dev` | Run the native desktop app in development |
+| `npm run tauri build` | Produce installable desktop bundles |
 
-| npm script | Command | Purpose |
-|-----------|---------|---------|
-| `dev` | `vite` | Start Vite dev server |
-| `build` | `tsc && vite build` | Type-check + production bundle |
-| `preview` | `vite preview` | Preview production build |
-| `tauri` | `tauri` | Tauri CLI passthrough |
+## Hotkey
 
-## Rust Dependencies
-
-Key crates from `Cargo.toml`:
-
-| Crate | Purpose |
-|-------|---------|
-| `tauri` (v2) | Desktop framework |
-| `rusqlite` (bundled) | Embedded SQLite |
-| `uuid` | Item ID generation |
-| `chrono` | Timestamps |
-| `tokio` | Async runtime |
-| `reqwest` | HTTP client for LLM APIs |
-| `mime_guess` | MIME type detection |
-| `serde` / `serde_json` | Serialization |
-
-## Hotkey (AutoHotkey v2)
-
-`clipdrop.ahk` binds **Ctrl+Shift+V** to toggle the window. Requires [AutoHotkey v2](https://www.autohotkey.com/). Run it manually or add to Windows startup.
+`clipdrop.ahk` binds **Ctrl+Shift+V** to toggle the window when AutoHotkey v2 is installed. Clipboard paste inside the focused app uses the normal **Ctrl+V** shortcut.

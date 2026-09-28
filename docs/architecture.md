@@ -39,6 +39,7 @@ User Input (Clipboard / Files / Text)
 |    intake.ts    -- Drop zone, paste handler          |
 |    dashboard.ts -- Stats grid, recent/failed items   |
 |    browse.ts    -- Search, category filter, detail   |
+|    settings.ts  -- Provider and storage settings     |
 |  styles.css     -- Design system (CSS variables)     |
 +-----------------------------------------------------+
                     | invoke()
@@ -61,7 +62,7 @@ User Input (Clipboard / Files / Text)
 +-----------------+    +-----------------------+
 | SQLite (FTS5)   |    | LLM Provider          |
 | clipdrop.db     |    | Ollama / OpenAI /     |
-|                 |    | Anthropic             |
+|                 |    | Anthropic / compatible|
 +-----------------+    +-----------------------+
 ```
 
@@ -81,7 +82,8 @@ clipdrop/
 │   └── pages/
 │       ├── intake.ts       # Drop zone + paste handler
 │       ├── dashboard.ts    # Stats + recent items
-│       └── browse.ts       # Search + category filter + detail panel
+│       ├── browse.ts       # Search + detail + full-content reader
+│       └── settings.ts     # Provider, model, storage, category settings
 │
 └── src-tauri/
     ├── Cargo.toml          # Rust dependencies
@@ -118,13 +120,15 @@ All Tauri commands receive `State<'_, AppState>` as a parameter.
 
 - Tauri commands are `async fn` and run on Tokio.
 - Intake commands spawn background processing tasks via `tokio::spawn()`.
-- Processing runs independently -- the frontend doesn't wait for LLM analysis to complete.
-- The frontend polls for updated state by re-querying when navigating to dashboard/browse pages.
+- Processing runs independently with a three-minute model timeout.
+- Failures are persisted; interrupted processing records become retryable failures at startup.
+- The Classify dashboard polls every 2.5 seconds while work is pending.
 
 ## Window Configuration
 
 From `tauri.conf.json`:
-- Size: 400x300
+- Expanded size: 1040×680
+- Compact widget size: 360×116
 - No window decorations (custom titlebar in HTML)
 - Always on top
 - Starts hidden (toggled via hotkey)

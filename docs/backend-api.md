@@ -201,7 +201,45 @@ Requeue a failed item for processing.
 await invoke("retry_failed", { id: "uuid" });
 ```
 
-Sets status to `"processing"` and spawns a new processor task.
+Sets status to `"processing"`, clears the previous failure message, and spawns a new processor task. Provider errors and the 180-second processing timeout are persisted in the item's `summary` field. Interrupted jobs are converted to failed items at application startup.
+
+---
+
+## Settings Commands
+
+### `get_settings`
+
+Returns the current `AppConfig`, including storage path, categories, and the selected LLM provider.
+
+```typescript
+const config = await invoke<AppConfig>("get_settings");
+```
+
+### `save_settings`
+
+Validates and persists the complete configuration to the application data directory.
+
+```typescript
+await invoke("save_settings", { config });
+```
+
+### `list_ollama_models`
+
+Calls `{url}/api/tags` and returns the installed Ollama model names.
+
+```typescript
+const models = await invoke<string[]>("list_ollama_models", {
+  url: "http://localhost:11434",
+});
+```
+
+### `test_llm_provider`
+
+Checks connectivity and selected-model availability for the supplied provider configuration. It returns a human-readable success message or rejects with a diagnostic error.
+
+```typescript
+const message = await invoke<string>("test_llm_provider", { provider });
+```
 
 ---
 
@@ -250,4 +288,4 @@ interface Stats {
 
 ## Error Handling
 
-All commands return `Result<T, String>`. Errors are string messages. The frontend catches them in try/catch blocks and displays via toast notifications.
+All commands return `Result<T, String>`. Errors are string messages. The frontend displays immediate failures with toast notifications; asynchronous processing failures remain visible on their item cards and detail views.

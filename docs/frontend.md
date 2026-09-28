@@ -6,10 +6,10 @@ The frontend is vanilla TypeScript with no framework (no React, Vue, or Svelte).
 
 ## Entry Point: `main.ts`
 
-Manages SPA routing between three pages and provides the global `showToast()` function.
+Manages SPA routing between four pages, compact/expanded window modes, keyboard shortcuts, and the global `showToast()` function.
 
 ```typescript
-type Page = "intake" | "dashboard" | "browse";
+type Page = "intake" | "dashboard" | "browse" | "settings";
 ```
 
 **Navigation:** Click handlers on titlebar buttons swap the `#app` container content by calling each page's `render()` function. The active button gets a CSS class.
@@ -23,14 +23,15 @@ type Page = "intake" | "dashboard" | "browse";
 The primary data entry page. Renders a full-height drop zone.
 
 **Interactions:**
-- **Drag & drop files:** `drop` event reads `dataTransfer.files`, calls `ingest_file` for each
+- **Native file picker:** the drop surface and Choose files button use `@tauri-apps/plugin-dialog`
+- **Drag & drop files:** Tauri's native webview event supplies absolute paths to `ingest_file`
 - **Drag & drop text:** `drop` event reads `dataTransfer.getData("text/plain")`, calls `ingest_text`
 - **Paste text:** Global `paste` event listener, calls `ingest_text`
 - **Paste images:** Iterates `clipboardData.items`, converts image blobs to `Uint8Array`, calls `ingest_clipboard_image`
 
 **Visual feedback:**
 - `.dragover` class on drag hover (accent border glow)
-- `.success` class flash on successful ingest (1 second)
+- Processing, success, error, and drag-over states follow the Figma component states
 
 ### Dashboard (`pages/dashboard.ts`)
 
@@ -45,7 +46,7 @@ Overview page showing stats and recent activity.
 
 **Status badges:** Color-coded by status -- done (cyan), processing (amber, pulsing animation), failed (red), pending (gray).
 
-**Actions:** Retry button on failed items calls `retry_failed`.
+**Actions:** Retry calls `retry_failed`. While work is pending, the page refreshes every 2.5 seconds and displays persisted processor errors.
 
 ### Browse (`pages/browse.ts`)
 
@@ -61,7 +62,17 @@ Search and explore all indexed content.
 
 **Category filter:** Calls `get_by_category` or `get_recent_items` (for "All").
 
-**Detail panel:** Shows full item info -- summary, category, source type, status, tags, and a preview of `raw_text` (truncated to 500 chars). Includes retry and delete action buttons.
+**Detail panel:** Shows summary, category, source type, status, tags, and a scrollable preview. **View full content** opens the complete extracted text with selection and copy-all support.
+
+### Settings (`pages/settings.ts`)
+
+Configures Ollama, OpenAI, Anthropic, or a custom OpenAI-compatible provider. Ollama models are discovered from `/api/tags`; connections can be tested before saving. Storage location and categories are editable here as well.
+
+## Desktop view modes
+
+- **Expanded:** 1040×680 workspace with Capture, Classify, Retrieve, and Settings.
+- **Compact:** 360×116 always-on-top parallelogram widget with capture, paste guidance, library, and expand controls.
+- The last selected mode is stored in `localStorage`.
 
 ## Styling
 

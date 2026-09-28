@@ -60,5 +60,5 @@ When an item is deleted:
 The `storage_path` is set in `config.json`. Directory structure is created automatically via `AppConfig::ensure_dirs()` on startup, which creates the inbox and all configured category directories.
 
 Platform defaults:
-- **Windows:** `%LOCALAPPDATA%/com.clipdrop.app/`
-- **Linux:** `~/.local/share/com.clipdrop.app/`
+- **Windows:** `%LOCALAPPDATA%/ClipDrop/`
+- **Linux:** `~/.local/share/ClipDrop/`
