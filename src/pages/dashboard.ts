@@ -26,7 +26,7 @@ const typeIcons: Record<string, string> = {
   url: "&#8599;",
 };
 
-export async function renderDashboard(container: HTMLElement) {
+export async function renderDashboard(container: HTMLElement, signal?: AbortSignal) {
   container.innerHTML = `<div class="empty-state">Loading...</div>`;
 
   try {
@@ -77,12 +77,16 @@ export async function renderDashboard(container: HTMLElement) {
         try {
           await invoke("retry_failed", { id });
           showToast("Retrying...");
-          renderDashboard(container);
+          renderDashboard(container, signal);
         } catch (err) {
           showToast(`Error: ${err}`);
         }
       });
     });
+    if (!signal?.aborted && items.some(item => item.status === "processing" || item.status === "pending")) {
+      const timer = window.setTimeout(() => renderDashboard(container, signal), 2500);
+      signal?.addEventListener("abort", () => clearTimeout(timer), { once: true });
+    }
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Error: ${escapeHtml(formatError(err))}</div>`;
   }
@@ -91,7 +95,7 @@ export async function renderDashboard(container: HTMLElement) {
 function itemRow(item: Item, showRetry = false): string {
   const icon = typeIcons[item.source_type] || "&#9634;";
   const name = escapeHtml(item.original_name || item.summary?.slice(0, 40) || item.id.slice(0, 8));
-  const category = escapeHtml(item.category || "—");
+  const category = escapeHtml(item.status === "failed" && item.summary ? item.summary.slice(0, 90) : item.category || "—");
   const status = escapeHtml(item.status);
   const date = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   return `

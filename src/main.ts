@@ -1,10 +1,11 @@
 import { renderIntake } from "./pages/intake";
 import { renderDashboard } from "./pages/dashboard";
 import { renderBrowse } from "./pages/browse";
+import { renderSettings } from "./pages/settings";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-type Page = "intake" | "dashboard" | "browse";
+type Page = "intake" | "dashboard" | "browse" | "settings";
 
 let currentPage: Page = "intake";
 let pageController = new AbortController();
@@ -28,10 +29,13 @@ function renderPage() {
       renderIntake(container, pageController.signal);
       break;
     case "dashboard":
-      renderDashboard(container);
+      renderDashboard(container, pageController.signal);
       break;
     case "browse":
       renderBrowse(container);
+      break;
+    case "settings":
+      renderSettings(container);
       break;
   }
 }
@@ -64,7 +68,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   document.addEventListener("keydown", (event) => {
     if (!(event.ctrlKey || event.metaKey)) return;
-    const page = ({ "1": "intake", "2": "dashboard", "3": "browse" } as const)[event.key];
+    const page = ({ "1": "intake", "2": "dashboard", "3": "browse", "4": "settings" } as const)[event.key];
     if (page) {
       event.preventDefault();
       navigate(page);

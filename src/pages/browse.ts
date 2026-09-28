@@ -180,7 +180,11 @@ async function showDetail(id: string, detailContainer: HTMLElement) {
         }
         ${
           item.raw_text
-            ? `<div class="detail-field"><div class="detail-label">Content</div><div class="detail-value" style="max-height:80px;overflow-y:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);white-space:pre-wrap;line-height:1.5">${escapeHtml(item.raw_text.slice(0, 500))}</div></div>`
+            ? `<div class="detail-field content-field">
+                <div class="detail-label">Content</div>
+                <div class="content-preview">${escapeHtml(item.raw_text.slice(0, 1200))}${item.raw_text.length > 1200 ? "…" : ""}</div>
+                <button class="btn btn-sm btn-ghost" id="view-full-content" type="button">View full content</button>
+              </div>`
             : ""
         }
         <div style="margin-top:8px;display:flex;gap:4px">
@@ -188,7 +192,30 @@ async function showDetail(id: string, detailContainer: HTMLElement) {
           <button class="btn btn-sm btn-danger" id="detail-delete">delete</button>
         </div>
       </div>
+      ${item.raw_text ? `<dialog class="content-dialog" id="content-dialog" aria-labelledby="content-dialog-title">
+        <div class="content-dialog-head"><div><span>FULL CONTENT</span><strong id="content-dialog-title">${escapeHtml(item.original_name || "Captured content")}</strong></div><button class="icon-btn" id="close-content" type="button" aria-label="Close full content">×</button></div>
+        <pre id="full-content"></pre>
+        <div class="content-dialog-actions"><span>${item.raw_text.length.toLocaleString()} characters</span><button class="btn btn-ghost" id="copy-content" type="button">Copy all</button></div>
+      </dialog>` : ""}
     `;
+
+    const dialog = detailContainer.querySelector<HTMLDialogElement>("#content-dialog");
+    const fullContent = detailContainer.querySelector<HTMLElement>("#full-content");
+    if (fullContent && item.raw_text) fullContent.textContent = item.raw_text;
+    detailContainer.querySelector("#view-full-content")?.addEventListener("click", () => dialog?.showModal());
+    detailContainer.querySelector("#close-content")?.addEventListener("click", () => dialog?.close());
+    dialog?.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    detailContainer.querySelector("#copy-content")?.addEventListener("click", async () => {
+      if (!item.raw_text) return;
+      try {
+        await navigator.clipboard.writeText(item.raw_text);
+        showToast("Full content copied");
+      } catch (err) {
+        showToast(`Could not copy: ${err}`);
+      }
+    });
 
     detailContainer.querySelector("#detail-retry")?.addEventListener("click", async () => {
       try {

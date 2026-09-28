@@ -26,6 +26,7 @@ pub fn run() {
 
             let db_path = app_data_dir.join("clipdrop.db");
             let database = Database::new(&db_path).expect("Failed to init database");
+            database.recover_interrupted_items().ok();
 
             app.manage(AppState {
                 db: Arc::new(database),
@@ -53,6 +54,10 @@ pub fn run() {
             queries::get_stats,
             queries::get_categories,
             queries::retry_failed,
+            config::get_settings,
+            config::save_settings,
+            config::list_ollama_models,
+            config::test_llm_provider,
             toggle_window,
         ])
         .run(tauri::generate_context!())

@@ -147,6 +147,25 @@ impl Database {
         Ok(())
     }
 
+    pub fn update_item_failure(&self, id: &str, error: &str) -> SqlResult<()> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().to_rfc3339();
+        conn.execute(
+            "UPDATE items SET status = 'failed', summary = ?1, updated_at = ?2 WHERE id = ?3",
+            rusqlite::params![format!("Processing failed: {}", error), now, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn recover_interrupted_items(&self) -> SqlResult<usize> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().to_rfc3339();
+        conn.execute(
+            "UPDATE items SET status = 'failed', summary = 'Processing was interrupted. Retry after checking the configured model.', updated_at = ?1 WHERE status = 'processing'",
+            rusqlite::params![now],
+        )
+    }
+
     pub fn update_item_storage_path(&self, id: &str, storage_path: &str) -> SqlResult<()> {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().to_rfc3339();

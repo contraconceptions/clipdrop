@@ -9,7 +9,7 @@ pub async fn process_item(db: Arc<Database>, config: AppConfig, item_id: String)
     let result = process_inner(&db, &config, &item_id).await;
     if let Err(e) = result {
         eprintln!("Processing failed for {}: {}", item_id, e);
-        db.update_item_status(&item_id, "failed").ok();
+        db.update_item_failure(&item_id, &e).ok();
     }
 }
 
@@ -37,7 +37,12 @@ async fn process_inner(db: &Database, config: &AppConfig, item_id: &str) -> Resu
         }
     };
 
-    let mut analysis = llm::analyze(&config.llm_provider, &text).await?;
+    let mut analysis = tokio::time::timeout(
+        std::time::Duration::from_secs(180),
+        llm::analyze(&config.llm_provider, &text),
+    )
+    .await
+    .map_err(|_| "The model did not respond within 3 minutes. Select a smaller/faster model and retry.".to_string())??;
     if !config
         .categories
         .iter()

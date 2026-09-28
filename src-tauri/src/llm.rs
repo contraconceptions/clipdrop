@@ -17,17 +17,25 @@ pub async fn analyze(config: &LlmProviderConfig, text: &str) -> Result<AnalysisR
 
     match config {
         LlmProviderConfig::Ollama { url, model } => analyze_ollama(url, model, truncated).await,
-        LlmProviderConfig::OpenAI { model } => {
-            let api_key = std::env::var("CLIPDROP_OPENAI_API_KEY")
-                .map_err(|_| "CLIPDROP_OPENAI_API_KEY is not set".to_string())?;
+        LlmProviderConfig::OpenAI { model, api_key } => {
+            let api_key = if api_key.is_empty() { std::env::var("CLIPDROP_OPENAI_API_KEY").map_err(|_| "OpenAI API key is not configured".to_string())? } else { api_key.clone() };
             analyze_openai(&api_key, model, truncated).await
         }
-        LlmProviderConfig::Anthropic { model } => {
-            let api_key = std::env::var("CLIPDROP_ANTHROPIC_API_KEY")
-                .map_err(|_| "CLIPDROP_ANTHROPIC_API_KEY is not set".to_string())?;
+        LlmProviderConfig::Anthropic { model, api_key } => {
+            let api_key = if api_key.is_empty() { std::env::var("CLIPDROP_ANTHROPIC_API_KEY").map_err(|_| "Anthropic API key is not configured".to_string())? } else { api_key.clone() };
             analyze_anthropic(&api_key, model, truncated).await
         }
+        LlmProviderConfig::Custom { url, model, api_key } => analyze_custom(url, api_key, model, truncated).await,
     }
+}
+
+async fn analyze_custom(url: &str, api_key: &str, model: &str, text: &str) -> Result<AnalysisResult, String> {
+    let client = reqwest::Client::new();
+    let resp = client.post(format!("{}/chat/completions", url.trim_end_matches('/'))).bearer_auth(api_key)
+        .json(&serde_json::json!({"model":model,"messages":[{"role":"system","content":SYSTEM_PROMPT},{"role":"user","content":text}],"temperature":0.3}))
+        .send().await.map_err(|e| format!("Custom provider request failed: {e}"))?.error_for_status().map_err(|e| format!("Custom provider returned an error: {e}"))?;
+    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    parse_analysis(body["choices"][0]["message"]["content"].as_str().ok_or("No response content")?)
 }
 
 fn truncate_utf8(text: &str, max_bytes: usize) -> &str {
@@ -50,6 +58,8 @@ async fn analyze_ollama(url: &str, model: &str, text: &str) -> Result<AnalysisRe
             "model": model,
             "prompt": format!("{}\n\nContent:\n{}", SYSTEM_PROMPT, text),
             "stream": false,
+            "format": "json",
+            "options": { "temperature": 0.1, "num_predict": 300 },
         }))
         .send()
         .await
